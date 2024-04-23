@@ -25,27 +25,36 @@ def parse(driver, page: int):
     url = f"https://megamarket.ru/catalog/{catalog}/page-{page}"
     driver.get(url)
     html = BeautifulSoup(driver.page_source, "html.parser")
-    catalog_items = html.find("div", class_="catalog-listing-content")
+    catalog_items = html.find("div", class_="catalog-items-list")
+
     if catalog_items is None:
         print(f"Нет каталога | Рекурсия на странице {url}")
         return parse(driver, page)
 
-    items = catalog_items.find_all("div", class_="item-block")
+    items = catalog_items.find_all("div", class_="catalog-item-regular-desktop ddl_product catalog-item-desktop")
     if len(items) == 0:
         print(f"0 Предметов | Рекурсия на странице {url}")
         return parse(driver, page)
 
     for item in items:
-        item_bonus = item.find("div", class_="item-bonus")
+        item_bonus = item.find("span", class_="bonus-amount")
         if item_bonus is None:
             continue
-        item_title = item.find("a", class_="ddl_product_link").text.strip()
+        item_title = item.find("a", class_="catalog-item-regular-desktop__title-link ddl_product_link").text.strip()
         usual_price = int(
-            re.findall(r"\d+", item.find("div", class_="item-price").find("span").text.replace(" ", ""))[0])
+            re.findall(r"\d+", item.find("div", class_="catalog-item-regular-desktop__price").text.replace(" ", ""))[0])
+        number_of_bonuses = int(re.findall(r"\d+", item_bonus.text.replace(" ", ""))[0])
         percentage_discount = int(
-            re.findall(r"\d+", item_bonus.find("span", class_="bonus-percent").text.replace(" ", ""))[0])
-        number_of_bonuses = int(item_bonus.find("span", class_="bonus-amount").text.replace(" ", ""))
+            re.findall(r"\d+", item.find("span", class_="bonus-percent").text.replace(" ", ""))[0])
         discounted_price = usual_price - number_of_bonuses
+        item_url = "https://megamarket.ru" + item.find("a", class_="ddl_product_link").get("href").strip()
+        print(f"{time.strftime('%H:%M:%S %d/%m/%Y')}\n"
+              f"Название: {item_title}\n"
+              f"Цена со скидкой: {discounted_price}\n"
+              f"Цена без скидки: {usual_price}\n"
+              f"Количество бонусов: {number_of_bonuses}\n"
+              f"Скидка в процентах: {percentage_discount}\n"
+              f"Ссылка: {item_url}\n\n")
 
         if percentage_discount < minimum_percentage:
             continue
@@ -56,7 +65,6 @@ def parse(driver, page: int):
         if discounted_price > max_price_with_discounted:
             continue
 
-        item_url = "https://megamarket.ru" + item.find("a", class_="ddl_product_link").get("href").strip()
         print(f"{time.strftime('%H:%M:%S %d/%m/%Y')}\n"
               f"Название: {item_title}\n"
               f"Цена со скидкой: {discounted_price}\n"
@@ -92,6 +100,7 @@ def main():
     print("Подгрузка куки файлов")
     for name, value in cookies:
         driver.add_cookie({"name": name, "value": value})
+    print("Куки подгружены")
     driver.get("https://megamarket.ru/")
     print("Start")
 
