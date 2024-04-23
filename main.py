@@ -48,13 +48,6 @@ def parse(driver, page: int):
             re.findall(r"\d+", item.find("span", class_="bonus-percent").text.replace(" ", ""))[0])
         discounted_price = usual_price - number_of_bonuses
         item_url = "https://megamarket.ru" + item.find("a", class_="ddl_product_link").get("href").strip()
-        print(f"{time.strftime('%H:%M:%S %d/%m/%Y')}\n"
-              f"Название: {item_title}\n"
-              f"Цена со скидкой: {discounted_price}\n"
-              f"Цена без скидки: {usual_price}\n"
-              f"Количество бонусов: {number_of_bonuses}\n"
-              f"Скидка в процентах: {percentage_discount}\n"
-              f"Ссылка: {item_url}\n\n")
 
         if percentage_discount < minimum_percentage:
             continue
